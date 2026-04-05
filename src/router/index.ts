@@ -58,4 +58,13 @@ const router = createRouter({
   routes,
 })
 
+// 处理动态导入失败的错误（通常是因为发布了新版本导致旧的 chunk 文件被删除，而用户浏览器缓存了旧的 index.html）
+router.onError((error) => {
+  if (error.message.includes('Failed to fetch dynamically imported module') || error.message.includes('Importing a module script failed')) {
+    console.warn('检测到版本更新，正在重新加载页面...');
+    // 强制刷新页面以获取最新的资源文件
+    window.location.reload();
+  }
+})
+
 export default router
