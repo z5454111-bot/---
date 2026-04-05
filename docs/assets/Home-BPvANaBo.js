@@ -1,0 +1,1 @@
+import{d as t,c as s,a as o,o as a}from"./index-DLQDD3Ei.js";import{_ as n}from"./_plugin-vue_export-helper-DlAUqK2U.js";const r={class:"home-container"},c=t({__name:"Home",setup(_){return(m,e)=>(a(),s("div",r,[...e[0]||(e[0]=[o("h1",null,"欢迎来到宝可梦世界",-1),o("p",null,"这里是你的旅途起点...",-1)])]))}}),l=n(c,[["__scopeId","data-v-4d6bcaf5"]]);export{l as default};
