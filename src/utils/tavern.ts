@@ -27,7 +27,7 @@ export const getSillyTavern = () => {
 }
 
 /**
- * 设置全局变量
+ * 设置聊天变量
  * @param variables 变量对象
  */
 export const setGlobalVariables = async (variables: Record<string, any>) => {
@@ -36,11 +36,11 @@ export const setGlobalVariables = async (variables: Record<string, any>) => {
 
   try {
     // 使用 insertOrAssignVariables 插入或更新变量
-    // type: 'global' 表示全局变量，这样可以在提示词中通过 {{getvar::xxx}} 访问
-    await th.insertOrAssignVariables(variables, { type: 'global' })
-    console.log('全局变量设置成功:', variables)
+    // type: 'chat' 表示当前聊天的变量，这样可以跟随存档记忆，并在提示词中通过 {{getvar::xxx}} 访问
+    await th.insertOrAssignVariables(variables, { type: 'chat' })
+    console.log('聊天变量设置成功:', variables)
   } catch (error) {
-    console.error('设置全局变量失败:', error)
+    console.error('设置聊天变量失败:', error)
   }
 }
 

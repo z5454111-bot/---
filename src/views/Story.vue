@@ -36,20 +36,23 @@ const formattedStory = computed(() => {
 onMounted(async () => {
   const th = getTavernHelper()
   
-  // 构建提示词
-  const prompt = `
-请根据以下玩家设定，生成一段宝可梦世界的开局剧情。
-玩家姓名：{{getvar::player_name}}
-性别：{{getvar::player_gender}}
-年龄：{{getvar::player_age}}
-出身地：{{getvar::player_background}}
-难度：{{getvar::player_difficulty}}
-
+  // 构建 YAML 格式的提示词，使用宏语法获取变量
+  const yamlPrompt = `请根据以下玩家设定，生成一段宝可梦世界的开局剧情。
 要求：
 1. 剧情要符合宝可梦世界的设定。
 2. 描述玩家在出身地准备出发的情景。
 3. 结尾要引出玩家即将获得第一只宝可梦或者踏上旅途。
 4. 不要输出任何多余的解释，直接开始剧情描写。
+
+\`\`\`yaml
+玩家设定:
+  姓名: "{{getvar::player_name}}"
+  性别: "{{getvar::player_gender}}"
+  年龄: "{{getvar::player_age}}"
+  出身地: "{{getvar::player_background}}"
+  难度: "{{getvar::player_difficulty}}"
+  天赋: "{{getvar::player_talents}}"
+\`\`\`
 `
 
   if (th) {
@@ -60,8 +63,10 @@ onMounted(async () => {
       })
 
       // 发送生成请求
+      // should_silence: true 表示静默生成，不会影响酒馆的停止按钮状态
+      // 并且 generate 本身只会返回生成的文本，不会自动将内容写入到聊天历史（即不会跑到"1层"）
       const result = await th.generate({
-        user_input: prompt,
+        user_input: yamlPrompt,
         should_silence: true,
         should_stream: true,
         injects: [
