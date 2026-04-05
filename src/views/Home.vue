@@ -163,21 +163,28 @@ const sendMessage = async () => {
 }
 
 // 初始化：同步变量到酒馆
-onMounted(async () => {
+onMounted(() => {
   if (isTavernEnv()) {
-    // 将玩家信息同步为酒馆变量
-    const variables = {
-      player: {
-        name: playerStore.name,
-        gender: playerStore.gender,
-        age: playerStore.age,
-        background: playerStore.background,
-        money: playerStore.money,
-        stats: playerStore.stats,
-        talents: playerStore.talents
+    // 稍微延迟一下，确保酒馆聊天已经完全加载
+    setTimeout(async () => {
+      // 将玩家信息同步为酒馆变量，使用扁平化结构方便在酒馆中通过 {{getvar::变量名}} 调用
+      const variables = {
+        '玩家姓名': playerStore.name,
+        '玩家性别': playerStore.gender === 'boy' ? '男' : playerStore.gender === 'girl' ? '女' : '其他',
+        '玩家年龄': playerStore.age,
+        '玩家出身地': playerStore.background,
+        '玩家难度': playerStore.difficulty,
+        '玩家金钱': playerStore.money,
+        '玩家HP': playerStore.stats.hp,
+        '玩家攻击': playerStore.stats.atk,
+        '玩家防御': playerStore.stats.def,
+        '玩家特攻': playerStore.stats.spa,
+        '玩家特防': playerStore.stats.spd,
+        '玩家速度': playerStore.stats.spe,
+        '玩家天赋': playerStore.talents.join('、')
       }
-    }
-    await setChatVariables(variables)
+      await setChatVariables(variables)
+    }, 500)
   }
 })
 </script>

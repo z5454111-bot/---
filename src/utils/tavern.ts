@@ -28,7 +28,11 @@ export const setChatVariables = async (variables: Record<string, any>) => {
     return;
   }
   try {
-    await window.TavernHelper.insertOrAssignVariables(variables, { type: 'chat' });
+    // 酒馆助手的 insertOrAssignVariables 可能是同步的，也可能是异步的
+    const result = window.TavernHelper.insertOrAssignVariables(variables, { type: 'chat' });
+    if (result instanceof Promise) {
+      await result;
+    }
     console.log('成功设置酒馆变量:', variables);
   } catch (error) {
     console.error('设置酒馆变量失败:', error);
