@@ -24,20 +24,40 @@ export const isTavernEnv = (): boolean => {
  * @param variables 变量对象
  */
 export const setChatVariables = async (variables: Record<string, any>) => {
+  console.log('准备设置酒馆变量:', variables);
+
+  // 方案A：通过 postMessage 跨域发送给父窗口（最稳妥的跨域方案）
+  if (window.parent !== window) {
+    window.parent.postMessage({
+      type: 'TAVERN_SET_VARIABLES',
+      variables: variables
+    }, '*');
+    console.log('已通过 postMessage 发送变量给父窗口');
+  }
+
+  // 方案B：尝试直接调用（如果扩展注入了环境）
   if (!isTavernEnv()) {
-    console.warn('不在酒馆环境中，跳过设置变量:', variables);
+    console.warn('未检测到直接的酒馆环境注入，依赖 postMessage 通信。');
     return;
   }
+  
   try {
-    // 酒馆助手的 insertOrAssignVariables 可能是同步的，也可能是异步的
-    // 根据最新文档，insertOrAssignVariables 是全局函数，而不是 TavernHelper 的方法
-    const result = window.insertOrAssignVariables(variables, { type: 'chat' });
+    let result;
+    if (typeof window.insertOrAssignVariables === 'function') {
+      result = window.insertOrAssignVariables(variables, { type: 'chat' });
+    } else if (window.TavernHelper && typeof window.TavernHelper.insertOrAssignVariables === 'function') {
+      result = window.TavernHelper.insertOrAssignVariables(variables, { type: 'chat' });
+    } else {
+      console.warn('当前环境中找不到 insertOrAssignVariables 函数，依赖 postMessage 通信。');
+      return;
+    }
+
     if (result instanceof Promise) {
       await result;
     }
-    console.log('成功设置酒馆变量:', variables);
+    console.log('成功直接设置酒馆变量:', variables);
   } catch (error) {
-    console.error('设置酒馆变量失败:', error);
+    console.error('直接设置酒馆变量失败:', error);
   }
 };
 
