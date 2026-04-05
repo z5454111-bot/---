@@ -1,1 +1,0 @@
-const o=()=>typeof window<"u"&&!!window.TavernHelper,t=()=>o()?window.TavernHelper:(console.warn("不在酒馆环境中，无法使用 TavernHelper"),null),s=async e=>{const r=t();if(r)try{await r.insertOrAssignVariables(e,{type:"chat"}),console.log("聊天变量设置成功:",e)}catch(n){console.error("设置聊天变量失败:",n)}};export{t as g,s};

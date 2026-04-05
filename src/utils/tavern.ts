@@ -1,117 +1,97 @@
 /**
- * 封装酒馆助手 API
- * 依赖于 window.TavernHelper 和 window.SillyTavern
+ * 封装与 SillyTavern 酒馆助手的交互
  */
 
-// 检查是否在酒馆环境中
-export const isTavernEnv = () => {
-  return typeof window !== 'undefined' && !!(window as any).TavernHelper
+// 声明全局变量，避免 TS 报错
+declare global {
+  interface Window {
+    TavernHelper: any;
+    iframe_events: any;
+    tavern_events: any;
+  }
 }
 
-// 获取 TavernHelper 实例
-export const getTavernHelper = () => {
-  if (!isTavernEnv()) {
-    console.warn('不在酒馆环境中，无法使用 TavernHelper')
-    return null
-  }
-  return (window as any).TavernHelper
-}
-
-// 获取 SillyTavern 实例
-export const getSillyTavern = () => {
-  if (typeof window === 'undefined' || !(window as any).SillyTavern) {
-    console.warn('不在酒馆环境中，无法使用 SillyTavern')
-    return null
-  }
-  return (window as any).SillyTavern
-}
+/**
+ * 检查是否在酒馆环境中
+ */
+export const isTavernEnv = (): boolean => {
+  return typeof window !== 'undefined' && !!window.TavernHelper;
+};
 
 /**
  * 设置聊天变量
  * @param variables 变量对象
  */
-export const setGlobalVariables = async (variables: Record<string, any>) => {
-  const th = getTavernHelper()
-  if (!th) return
-
-  try {
-    // 使用 insertOrAssignVariables 插入或更新变量
-    // type: 'chat' 表示当前聊天的变量，这样可以跟随存档记忆，并在提示词中通过 {{getvar::xxx}} 访问
-    await th.insertOrAssignVariables(variables, { type: 'chat' })
-    console.log('聊天变量设置成功:', variables)
-  } catch (error) {
-    console.error('设置聊天变量失败:', error)
+export const setChatVariables = async (variables: Record<string, any>) => {
+  if (!isTavernEnv()) {
+    console.warn('不在酒馆环境中，跳过设置变量:', variables);
+    return;
   }
-}
+  try {
+    await window.TavernHelper.insertOrAssignVariables(variables, { type: 'chat' });
+    console.log('成功设置酒馆变量:', variables);
+  } catch (error) {
+    console.error('设置酒馆变量失败:', error);
+  }
+};
 
 /**
- * 发送生成请求并获取结果
- * @param prompt 提示词
- * @param onStream 接收流式数据的回调函数
- * @returns 生成的最终文本
+ * 发起 AI 生成请求
+ * @param userInput 用户输入
+ * @param onStream 流式回调函数
+ * @returns 最终生成的文本
  */
-export const generateStory = async (prompt: string, onStream?: (text: string) => void): Promise<string> => {
-  const th = getTavernHelper()
-  if (!th) {
-    // 模拟生成，用于本地测试
-    return new Promise((resolve) => {
-      let text = '（模拟生成）你踏上了宝可梦世界的旅途...'
-      if (onStream) {
-        let current = ''
-        let i = 0
-        const timer = setInterval(() => {
-          if (i < text.length) {
-            current += text[i]
-            onStream(current)
-            i++
-          } else {
-            clearInterval(timer)
-            resolve(text)
-          }
-        }, 50)
-      } else {
-        setTimeout(() => resolve(text), 1000)
+export const generateResponse = async (
+  userInput: string,
+  onStream?: (text: string) => void
+): Promise<string> => {
+  if (!isTavernEnv()) {
+    console.warn('不在酒馆环境中，模拟回复');
+    // 模拟延迟和流式回复
+    if (onStream) {
+      const mockText = '这是一个模拟的 AI 回复。';
+      for (let i = 1; i <= mockText.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        onStream(mockText.substring(0, i));
       }
-    })
+      return mockText;
+    }
+    return '这是一个模拟的 AI 回复。';
+  }
+
+  let stopStreamListener: (() => void) | null = null;
+
+  if (onStream) {
+    // 监听流式输出
+    const eventReturn = window.TavernHelper.eventOn(
+      'js_stream_token_received_fully', // iframe_events.STREAM_TOKEN_RECEIVED_FULLY
+      (text: string) => {
+        onStream(text);
+      }
+    );
+    stopStreamListener = eventReturn.stop;
   }
 
   try {
-    // 如果有流式回调，监听流式事件
-    let stopStreamListener: (() => void) | null = null
-    if (onStream && th.eventOn && th.iframe_events) {
-      const listener = th.eventOn(th.iframe_events.STREAM_TOKEN_RECEIVED_FULLY, (text: string) => {
-        onStream(text)
-      })
-      stopStreamListener = listener.stop
-    }
-
-    // 调用 generate 函数
-    // should_silence: true 表示静默生成，不会在酒馆聊天界面显示
-    // should_stream: !!onStream 表示是否启用流式传输
-    const result = await th.generate({
-      user_input: prompt,
-      should_silence: true,
+    const result = await window.TavernHelper.generate({
+      user_input: userInput,
       should_stream: !!onStream,
-      // 注入提示词，确保 AI 知道当前是游戏开局
-      injects: [
-        {
-          role: 'system',
-          content: '现在开始宝可梦角色扮演游戏。请根据玩家的设定，生成一段开局剧情。不要输出任何多余的解释，直接开始剧情描写。',
-          position: 'in_chat',
-          depth: 0,
-          should_scan: true
-        }
-      ]
-    })
-
-    // 停止监听
-    if (stopStreamListener) {
-      stopStreamListener()
-    }
-
-    return result
+    });
+    return result;
   } catch (error) {
-    console.error('生成剧情失败:', error)
-    return '生成剧情失败，请检查网络或 API 设置。'
+    console.error('AI 生成失败:', error);
+    throw error;
+  } finally {
+    if (stopStreamListener) {
+      stopStreamListener();
+    }
   }
-}
+};
+
+/**
+ * 停止所有生成
+ */
+export const stopGeneration = () => {
+  if (!isTavernEnv()) return;
+  window.TavernHelper.stopAllGeneration();
+};

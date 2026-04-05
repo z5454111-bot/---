@@ -49,7 +49,6 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { usePlayerStore } from '@/store/player'
-import { setGlobalVariables } from '@/utils/tavern'
 
 const router = useRouter()
 const message = useMessage()
@@ -102,7 +101,7 @@ const toggleTalent = (talent: typeof availableTalents[0]) => {
 }
 
 // 完成创建
-const handleComplete = async () => {
+const handleComplete = () => {
   if (remainingPoints.value < 0) {
     message.error('点数透支，请重新选择！')
     return
@@ -116,21 +115,10 @@ const handleComplete = async () => {
     playerStore.money += 10000
   }
   
-  // 设置酒馆全局变量
-  await setGlobalVariables({
-    player_name: playerStore.name,
-    player_gender: playerStore.gender === 'boy' ? '男' : playerStore.gender === 'girl' ? '女' : '其他',
-    player_age: playerStore.age,
-    player_background: playerStore.background,
-    player_difficulty: playerStore.difficulty,
-    player_money: playerStore.money,
-    player_talents: selectedTalents.value.map(id => availableTalents.find(t => t.id === id)?.name).join('、')
-  })
-
   message.success('角色创建完成！即将开始旅途...')
   
-  // 跳转到剧情页面
-  router.push('/story')
+  // 跳转到游戏主页
+  router.push('/home')
 }
 </script>
 

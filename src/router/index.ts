@@ -43,14 +43,6 @@ const routes: Array<RouteRecordRaw> = [
     },
   },
   {
-    path: '/story',
-    name: 'Story',
-    component: () => import('@/views/Story.vue'),
-    meta: {
-      title: '开局剧情 - 宝可梦世界',
-    },
-  },
-  {
     path: '/home',
     name: 'Home',
     component: () => import('@/views/Home.vue'), // 懒加载 Home 视图
