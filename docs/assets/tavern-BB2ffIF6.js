@@ -1,0 +1,1 @@
+const o=()=>typeof window<"u"&&!!window.TavernHelper,t=()=>o()?window.TavernHelper:(console.warn("不在酒馆环境中，无法使用 TavernHelper"),null),s=async e=>{const r=t();if(r)try{await r.insertOrAssignVariables(e,{type:"global"}),console.log("全局变量设置成功:",e)}catch(n){console.error("设置全局变量失败:",n)}};export{t as g,s};
