@@ -12,10 +12,27 @@ declare global {
 }
 
 /**
+ * 获取酒馆助手实例
+ * 由于前端可能作为 iframe 嵌入在酒馆中，TavernHelper 可能在 window.parent 上
+ */
+export const getTavernHelper = () => {
+  if (typeof window === 'undefined') return null;
+  if (window.TavernHelper) return window.TavernHelper;
+  try {
+    if (window.parent && window.parent.TavernHelper) {
+      return window.parent.TavernHelper;
+    }
+  } catch (e) {
+    console.warn('无法访问 window.parent.TavernHelper，可能是跨域限制:', e);
+  }
+  return null;
+};
+
+/**
  * 检查是否在酒馆环境中
  */
 export const isTavernEnv = (): boolean => {
-  return typeof window !== 'undefined' && !!window.TavernHelper;
+  return !!getTavernHelper();
 };
 
 /**
@@ -23,13 +40,14 @@ export const isTavernEnv = (): boolean => {
  * @param variables 变量对象
  */
 export const setChatVariables = async (variables: Record<string, any>) => {
-  if (!isTavernEnv()) {
+  const helper = getTavernHelper();
+  if (!helper) {
     console.warn('不在酒馆环境中，跳过设置变量:', variables);
     return;
   }
   try {
     // 酒馆助手的 insertOrAssignVariables 可能是同步的，也可能是异步的
-    const result = window.TavernHelper.insertOrAssignVariables(variables, { type: 'chat' });
+    const result = helper.insertOrAssignVariables(variables, { type: 'chat' });
     if (result instanceof Promise) {
       await result;
     }
@@ -49,7 +67,8 @@ export const generateResponse = async (
   userInput: string,
   onStream?: (text: string) => void
 ): Promise<string> => {
-  if (!isTavernEnv()) {
+  const helper = getTavernHelper();
+  if (!helper) {
     console.warn('不在酒馆环境中，模拟回复');
     // 模拟延迟和流式回复
     if (onStream) {
@@ -67,7 +86,7 @@ export const generateResponse = async (
 
   if (onStream) {
     // 监听流式输出
-    const eventReturn = window.TavernHelper.eventOn(
+    const eventReturn = helper.eventOn(
       'js_stream_token_received_fully', // iframe_events.STREAM_TOKEN_RECEIVED_FULLY
       (text: string) => {
         onStream(text);
@@ -77,7 +96,7 @@ export const generateResponse = async (
   }
 
   try {
-    const result = await window.TavernHelper.generate({
+    const result = await helper.generate({
       user_input: userInput,
       should_stream: !!onStream,
     });
@@ -96,6 +115,7 @@ export const generateResponse = async (
  * 停止所有生成
  */
 export const stopGeneration = () => {
-  if (!isTavernEnv()) return;
-  window.TavernHelper.stopAllGeneration();
+  const helper = getTavernHelper();
+  if (!helper) return;
+  helper.stopAllGeneration();
 };
