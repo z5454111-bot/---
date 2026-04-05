@@ -27,12 +27,12 @@ export const setChatVariables = async (variables: Record<string, any>) => {
   console.log('准备设置酒馆变量:', variables);
 
   // 方案A：通过 postMessage 跨域发送给父窗口（最稳妥的跨域方案）
-  if (window.parent !== window) {
-    window.parent.postMessage({
+  if (window.top !== window) {
+    window.top?.postMessage({
       type: 'TAVERN_SET_VARIABLES',
       variables: variables
     }, '*');
-    console.log('已通过 postMessage 发送变量给父窗口');
+    console.log('已通过 postMessage 发送变量给顶层窗口');
   }
 
   // 方案B：尝试直接调用（如果扩展注入了环境）
