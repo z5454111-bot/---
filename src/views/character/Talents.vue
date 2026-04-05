@@ -127,7 +127,7 @@ const handleComplete = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
   width: 100vw;
   background-color: #f8f8f8;
   color: #333;

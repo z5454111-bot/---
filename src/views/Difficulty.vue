@@ -79,7 +79,7 @@ const handleDifficultySelect = (option: { label: string, level: DifficultyLevel,
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  height: 100vh;
+  min-height: 100vh;
   width: 100vw;
   background-color: #f8f8f8; /* GBA 经典浅色背景 */
   color: #333;
