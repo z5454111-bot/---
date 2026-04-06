@@ -40,8 +40,11 @@ export const getNativeTavernHelper = (): any | null => {
   for (let i = 0; i < 5; i++) {
     try {
       if (currentWindow.parent && currentWindow.parent !== currentWindow) {
-        if ((currentWindow.parent as any).TavernHelper) {
-          return (currentWindow.parent as any).TavernHelper;
+        // 尝试访问 parent 的属性，如果跨域会抛出异常
+        const parentWin = currentWindow.parent as any;
+        // 检查是否有 TavernHelper
+        if (parentWin.TavernHelper) {
+          return parentWin.TavernHelper;
         }
         currentWindow = currentWindow.parent;
       } else {
@@ -49,6 +52,8 @@ export const getNativeTavernHelper = (): any | null => {
       }
     } catch (e) {
       console.warn(`[Tavern检测] 访问第${i + 1}层parent失败（跨域）:`, e);
+      // 跨域时，无法直接访问 parent 的属性，只能通过 postMessage 通信
+      // 这里不再继续向上查找，因为已经跨域了
       break;
     }
   }
