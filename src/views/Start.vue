@@ -28,6 +28,7 @@
     <div class="footer">
       <p>©2024 Kilo Code</p>
       <p>Press Start to Play</p>
+      <button class="test-btn" @click="testAvatarPath">测试获取头像路径</button>
     </div>
   </div>
 </template>
@@ -36,6 +37,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
+import { getCharAvatarPath } from '../utils/tavern'
 
 const router = useRouter()
 const message = useMessage()
@@ -65,6 +67,17 @@ const handleMenuClick = (action: string) => {
       // TODO: 打开设置面板
       message.info('打开设置')
       break
+  }
+}
+
+// 测试获取头像路径
+const testAvatarPath = () => {
+  const path = getCharAvatarPath()
+  if (path) {
+    message.success(`获取成功: ${path}`)
+    alert(`头像路径: ${path}`)
+  } else {
+    message.error('获取失败，请检查是否在酒馆环境中')
   }
 }
 </script>
@@ -168,6 +181,23 @@ const handleMenuClick = (action: string) => {
 
 .footer p {
   margin: 5px 0;
+}
+
+.test-btn {
+  margin-top: 10px;
+  padding: 5px 10px;
+  background-color: #ffcb05;
+  color: #3b4cca;
+  border: 2px solid #3b4cca;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.test-btn:hover {
+  background-color: #3b4cca;
+  color: #ffcb05;
 }
 
 /* 动画定义 */

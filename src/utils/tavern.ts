@@ -13,10 +13,67 @@ declare global {
 }
 
 /**
+ * 递归向上查找 TavernHelper，兼容多层 iframe 嵌套
+ * 最多查找 5 层，防止无限循环
+ */
+export const getNativeTavernHelper = (): any | null => {
+  if (typeof window === 'undefined') return null;
+
+  // 先检查当前 window
+  if ((window as any).TavernHelper) {
+    return (window as any).TavernHelper;
+  }
+
+  try {
+    // 尝试直接访问 top（最顶层窗口）
+    if (window.top && window.top !== window) {
+      if ((window.top as any).TavernHelper) {
+        return (window.top as any).TavernHelper;
+      }
+    }
+  } catch (e) {
+    console.warn('[Tavern检测] 访问window.top失败（跨域）:', e);
+  }
+
+  // 逐层向上查找，最多 5 层
+  let currentWindow: Window = window;
+  for (let i = 0; i < 5; i++) {
+    try {
+      if (currentWindow.parent && currentWindow.parent !== currentWindow) {
+        if ((currentWindow.parent as any).TavernHelper) {
+          return (currentWindow.parent as any).TavernHelper;
+        }
+        currentWindow = currentWindow.parent;
+      } else {
+        break;
+      }
+    } catch (e) {
+      console.warn(`[Tavern检测] 访问第${i + 1}层parent失败（跨域）:`, e);
+      break;
+    }
+  }
+
+  return null;
+};
+
+/**
  * 检查是否在酒馆环境中
  */
 export const isTavernEnv = (): boolean => {
-  return typeof window !== 'undefined' && !!window.TavernHelper;
+  return !!getNativeTavernHelper();
+};
+
+/**
+ * 获取当前角色卡的头像路径
+ * @returns 头像路径字符串，如果获取失败则返回 null
+ */
+export const getCharAvatarPath = (): string | null => {
+  const helper = getNativeTavernHelper();
+  if (helper && typeof helper.getCharAvatarPath === 'function') {
+    return helper.getCharAvatarPath();
+  }
+  console.warn('无法获取角色头像路径：未找到 TavernHelper 或 getCharAvatarPath 方法');
+  return null;
 };
 
 /**
@@ -43,10 +100,11 @@ export const setChatVariables = async (variables: Record<string, any>) => {
   
   try {
     let result;
+    const helper = getNativeTavernHelper();
     if (typeof window.insertOrAssignVariables === 'function') {
       result = window.insertOrAssignVariables(variables, { type: 'chat' });
-    } else if (window.TavernHelper && typeof window.TavernHelper.insertOrAssignVariables === 'function') {
-      result = window.TavernHelper.insertOrAssignVariables(variables, { type: 'chat' });
+    } else if (helper && typeof helper.insertOrAssignVariables === 'function') {
+      result = helper.insertOrAssignVariables(variables, { type: 'chat' });
     } else {
       console.warn('当前环境中找不到 insertOrAssignVariables 函数，依赖 postMessage 通信。');
       return;
@@ -88,8 +146,9 @@ export const generateResponse = async (
   let stopStreamListener: (() => void) | null = null;
 
   if (onStream) {
+    const helper = getNativeTavernHelper();
     // 监听流式输出
-    const eventReturn = window.TavernHelper.eventOn(
+    const eventReturn = helper.eventOn(
       'js_stream_token_received_fully', // iframe_events.STREAM_TOKEN_RECEIVED_FULLY
       (text: string) => {
         onStream(text);
@@ -99,7 +158,8 @@ export const generateResponse = async (
   }
 
   try {
-    const result = await window.TavernHelper.generate({
+    const helper = getNativeTavernHelper();
+    const result = await helper.generate({
       user_input: userInput,
       should_stream: !!onStream,
     });
@@ -119,5 +179,8 @@ export const generateResponse = async (
  */
 export const stopGeneration = () => {
   if (!isTavernEnv()) return;
-  window.TavernHelper.stopAllGeneration();
+  const helper = getNativeTavernHelper();
+  if (helper && typeof helper.stopAllGeneration === 'function') {
+    helper.stopAllGeneration();
+  }
 };
